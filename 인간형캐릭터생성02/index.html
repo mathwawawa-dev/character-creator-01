@@ -345,7 +345,7 @@
   </div>
 
   <!-- Version Stamp -->
-  <div class="version-stamp" id="versionStamp">v0.0.3_20260820_0246_step2_assembly</div>
+  <div class="version-stamp" id="versionStamp">v0.0.9_20260820_0306_quota_retry_and_sample_fallback</div>
 
   <script src="assets.js"></script>
   <script>
@@ -557,7 +557,16 @@
 
         if (!response.ok) {
           const err = await response.json();
-          throw new Error(err.error?.message || `HTTP ${response.status}`);
+          const errMsg = err.error?.message || `HTTP ${response.status}`;
+          
+          // 429 쿼타 초과인 경우 남은 시간 파싱
+          const retryMatch = errMsg.match(/retry in ([0-9.]+)s/i);
+          if (retryMatch) {
+            let remainSec = Math.ceil(parseFloat(retryMatch[1]));
+            startQuotaCountdown(remainSec);
+            throw new Error(`API 무료 쿼타가 소진되었습니다 (대기 필요: ${remainSec}초). 아래 카운트다운 완료 후 재시도하거나, 아래 '샘플 픽셀 시트 로드' 버튼으로 배경제거/슬라이싱 기능을 바로 테스트해보세요!`);
+          }
+          throw new Error(errMsg);
         }
 
         const data = await response.json();
@@ -596,9 +605,73 @@
 
       } catch (e) {
         status.style.color = '#ff4757';
-        status.innerText = `❌ 오류: ${e.message}`;
+        status.innerHTML = `❌ 오류: ${e.message} <br><br>
+          <button onclick="loadSampleSpriteSheet()" style="padding:6px 14px; background:#4a5568; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:0.85rem; margin-top:5px;">
+            🖼️ 쿼타 대기 중 샘플 픽셀 시트 로드 & 기능 테스트
+          </button>`;
         genBtn.disabled = false;
       }
+    }
+
+    let countdownTimer = null;
+    function startQuotaCountdown(seconds) {
+      clearInterval(countdownTimer);
+      let count = seconds;
+      const status = document.getElementById('aiStatus');
+      countdownTimer = setInterval(() => {
+        count--;
+        if (count <= 0) {
+          clearInterval(countdownTimer);
+          status.style.color = '#2ed573';
+          status.innerHTML = `✅ 쿼타 쿨다운이 완료되었습니다! <b>🚀 AI 생성</b> 버튼을 다시 눌러보세요.`;
+        }
+      }, 1000);
+    }
+
+    // 쿼타 대기 중에도 배경 제거/슬라이싱 파이프라인을 검증할 수 있는 샘플 픽셀 시트 생성기
+    function loadSampleSpriteSheet() {
+      const tempCvs = document.createElement('canvas');
+      tempCvs.width = 384; tempCvs.height = 64;
+      const ctx = tempCvs.getContext('2d');
+      
+      // 배경: 순수 마젠타 (#FF00FF)
+      ctx.fillStyle = '#FF00FF';
+      ctx.fillRect(0, 0, 384, 64);
+      
+      // 6개 프레임의 귀여운 픽셀 캐릭터 그리기
+      for(let f = 0; f < 6; f++) {
+        const ox = f * 64 + 16;
+        const oy = 12 + (f % 2 === 0 ? 0 : 2); // 걷는 모션 y축 변화
+        
+        // 몸통
+        ctx.fillStyle = '#2ed573';
+        ctx.fillRect(ox, oy, 32, 36);
+        ctx.fillStyle = '#1e90ff';
+        ctx.fillRect(ox + 4, oy + 20, 24, 16);
+        
+        // 눈
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(ox + 8, oy + 8, 6, 6);
+        ctx.fillRect(ox + 20, oy + 8, 6, 6);
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(ox + 10, oy + 10, 4, 4);
+        ctx.fillRect(ox + 22, oy + 10, 4, 4);
+
+        // 팔 (프레임별 움직임)
+        ctx.fillStyle = '#ffa502';
+        ctx.fillRect(ox - 2, oy + 14 + (f * 2 % 6), 4, 10);
+        ctx.fillRect(ox + 30, oy + 18 - (f * 2 % 6), 4, 10);
+      }
+      
+      loadUploadedImage(tempCvs.toDataURL());
+      document.getElementById('chromaColor').value = '#FF00FF';
+      processCleanupYCbCr();
+      autoSliceFrames();
+      
+      const status = document.getElementById('aiStatus');
+      status.style.display = 'block';
+      status.style.color = '#2ed573';
+      status.innerText = '✨ 6프레임 픽셀 시트 샘플이 로드되어 YCbCr 배경 제거 및 슬라이싱이 자동 적용되었습니다!';
     }
 
     // =============================================
