@@ -238,13 +238,22 @@
       <div id="aiModeView" style="display:none; flex-direction:column; width:100%; height:100%; padding:20px; overflow-y:auto;">
         <h2>🧠 통합 AI 생성 및 정제 모드 (Post-Processing)</h2>
         <p style="font-size:0.95rem; margin-top:10px; color:var(--dim);">
-          이곳에서는 거친 픽셀 이미지(예: 하얀색/단색 배경)를 업로드하여 브라우저에서 즉시 투명 배경으로 정제(Alpha Cleanup)할 수 있습니다. (Step 3)
+          텍스트 프롬프트를 입력하여 AI 캐릭터를 생성하거나(가상 연동), 거친 픽셀 이미지를 업로드하여 투명 배경으로 정제(Alpha Cleanup)할 수 있습니다.
         </p>
 
+        <!-- Prompt Area (Step 4) -->
+        <div style="margin-top:20px; background:var(--panel); padding:20px; border-radius:12px; border:1px solid var(--border); display:flex; gap:15px; align-items:center;">
+          <input type="text" id="aiPrompt" placeholder="예: 불꽃을 내뿜는 붉은색 드래곤 기사, 픽셀아트, 32x32, 흰색 배경" style="flex:1; padding:12px; border-radius:6px; border:1px solid var(--dim); background:var(--bg); color:white; font-size:1rem;">
+          <button onclick="generateAI()" style="padding:12px 24px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold; font-size:1rem;">🚀 AI 생성 (가상)</button>
+        </div>
+
+        <!-- AI Status Log -->
+        <div id="aiStatus" style="display:none; margin-top:15px; color:#f39c12; font-weight:bold; font-size:0.9rem;"></div>
+
         <div style="margin-top: 20px; display:flex; gap: 20px;">
-          <!-- Uploader -->
+          <!-- Uploader & Options -->
           <div style="flex:1; background:var(--panel); padding:20px; border-radius:12px; border:1px solid var(--border);">
-            <h3>1. 이미지 업로드</h3>
+            <h3>1. 생성된/외부 이미지 업로드</h3>
             <input type="file" id="imageUpload" accept="image/*" style="margin-top:15px; color:white;">
             
             <h3 style="margin-top:25px;">2. 정제 옵션</h3>
@@ -410,21 +419,57 @@
     document.getElementById('imageUpload').addEventListener('change', function(e) {
       const file = e.target.files[0];
       if(!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const img = new Image();
-        img.onload = function() {
-          uploadedImg = img;
-          const cvs = document.getElementById('cleanupCanvas');
-          const ctx = cvs.getContext('2d');
-          cvs.width = img.width;
-          cvs.height = img.height;
-          ctx.drawImage(img, 0, 0);
-        };
-        img.src = evt.target.result;
-      };
-      reader.readAsDataURL(file);
+      loadUploadedImage(URL.createObjectURL(file));
     });
+
+    function loadUploadedImage(src) {
+      const img = new Image();
+      img.onload = function() {
+        uploadedImg = img;
+        const cvs = document.getElementById('cleanupCanvas');
+        const ctx = cvs.getContext('2d');
+        cvs.width = img.width;
+        cvs.height = img.height;
+        ctx.drawImage(img, 0, 0);
+      };
+      img.src = src;
+    }
+
+    function generateAI() {
+      const prompt = document.getElementById('aiPrompt').value;
+      if(!prompt.trim()) {
+        alert("프롬프트를 입력하세요.");
+        return;
+      }
+      
+      const status = document.getElementById('aiStatus');
+      status.style.display = 'block';
+      status.innerText = "⏳ AI 서버에 요청을 전송 중입니다... (가상 딜레이 진행 중)";
+      
+      // Mocking AI Generation Delay
+      setTimeout(() => {
+        status.innerText = "✅ AI 생성이 완료되었습니다! 아래 프리뷰 캔버스에 결과가 로드되었습니다.";
+        // Draw a dummy AI generated image (a white box with a colored square in middle to test cleanup)
+        createDummyAIImage();
+      }, 2000);
+    }
+
+    function createDummyAIImage() {
+      const tempCvs = document.createElement('canvas');
+      tempCvs.width = 128; tempCvs.height = 128;
+      const ctx = tempCvs.getContext('2d');
+      // Background white (to be cleaned up)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 128, 128);
+      // Dummy character
+      ctx.fillStyle = '#ff4757';
+      ctx.fillRect(32, 32, 64, 64);
+      ctx.fillStyle = 'black';
+      ctx.fillRect(48, 48, 10, 10);
+      ctx.fillRect(70, 48, 10, 10);
+      
+      loadUploadedImage(tempCvs.toDataURL());
+    }
 
     function processCleanup() {
       if(!uploadedImg) {
