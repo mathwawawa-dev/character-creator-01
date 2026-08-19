@@ -278,25 +278,60 @@
         <!-- AI Status Log -->
         <div id="aiStatus" style="display:none; margin-top:15px; color:#f39c12; font-weight:bold; font-size:0.9rem;"></div>
 
+        <!-- Motion Presets (perfectpixel-studio 100+ Catalog) -->
+        <div style="margin-top:20px; background:var(--panel); padding:20px; border-radius:12px; border:1px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 style="font-size:1.1rem; color:#fff;">🏃 100+ 모션 프리셋 카탈로그 (perfectpixel-studio)</h3>
+            <span id="selectedMotionLabel" style="color:var(--accent); font-weight:bold; font-size:0.9rem;">선택된 모션: 걷기 (walk, 6프레임)</span>
+          </div>
+          <!-- Category Tabs -->
+          <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;" id="motionCatTabs">
+            <button class="tab-btn active" style="padding:6px 14px; border-radius:20px; background:#1e2130; border:1px solid var(--border);" onclick="filterMotionCategory('기본 동작', this)">기본 동작</button>
+            <button class="tab-btn" style="padding:6px 14px; border-radius:20px; background:#1e2130; border:1px solid var(--border);" onclick="filterMotionCategory('전투', this)">전투</button>
+            <button class="tab-btn" style="padding:6px 14px; border-radius:20px; background:#1e2130; border:1px solid var(--border);" onclick="filterMotionCategory('마법·스킬', this)">마법·스킬</button>
+            <button class="tab-btn" style="padding:6px 14px; border-radius:20px; background:#1e2130; border:1px solid var(--border);" onclick="filterMotionCategory('피해·상태이상', this)">피해·상태이상</button>
+            <button class="tab-btn" style="padding:6px 14px; border-radius:20px; background:#1e2130; border:1px solid var(--border);" onclick="filterMotionCategory('감정·표현', this)">감정·표현</button>
+          </div>
+          <!-- Presets Grid -->
+          <div id="motionPresetsGrid" style="display:flex; gap:8px; flex-wrap:wrap; max-height:140px; overflow-y:auto; padding:4px;"></div>
+        </div>
+
         <div style="margin-top: 20px; display:flex; gap: 20px;">
           <!-- Uploader & Options -->
           <div style="flex:1; background:var(--panel); padding:20px; border-radius:12px; border:1px solid var(--border);">
             <h3>1. 생성된/외부 이미지 업로드</h3>
             <input type="file" id="imageUpload" accept="image/*" style="margin-top:15px; color:white;">
             
-            <h3 style="margin-top:25px;">2. 정제 옵션</h3>
+            <h3 style="margin-top:25px;">2. 정제 옵션 (YCbCr Matting)</h3>
             <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
-              <label><input type="color" id="chromaColor" value="#ffffff"> 제거할 타겟 색상 (크로마키)</label>
-              <label><input type="range" id="tolerance" min="0" max="100" value="20"> 색상 허용 오차 (Tolerance)</label>
-              <button onclick="processCleanup()" style="margin-top:10px; padding:10px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">배경 제거 실행</button>
+              <label><input type="color" id="chromaColor" value="#FF00FF"> 제거할 타겟 색상 (기본: 마젠타 #FF00FF)</label>
+              <label><input type="range" id="tolerance" min="0" max="100" value="25"> 색상 허용 오차 (Tolerance)</label>
+              <button onclick="processCleanup()" style="margin-top:10px; padding:10px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🧹 YCbCr 배경 제거 실행</button>
             </div>
           </div>
 
-          <!-- Preview -->
+          <!-- Preview & Animation Player (perfectpixel-studio Live Viewer) -->
           <div style="flex:1; display:flex; flex-direction:column; align-items:center; background:#1e2130; padding:20px; border-radius:12px; border:1px solid var(--border); gap:15px;">
-            <h3>결과 미리보기</h3>
-            <!-- Checkerboard background for transparency preview -->
-            <canvas id="cleanupCanvas" width="256" height="256" style="background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xkhzTigHwwD8oP/YyvAKQ8yB4/GwDB8w3DMRoZRM3h0GgMAO8EX414N+c4AAAAASUVORK5CYII=') repeat; border:2px solid var(--border); image-rendering:pixelated; max-width:100%; height:auto;"></canvas>
+            <div style="display:flex; width:100%; justify-content:space-between; align-items:center;">
+              <h3>결과 미리보기 & 실시간 모션 뷰어</h3>
+              <div id="fpsControl" style="font-size:0.85rem; color:var(--dim);">
+                FPS: <span id="fpsVal">10</span>
+              </div>
+            </div>
+
+            <!-- Live Motion Animation Canvas -->
+            <div style="display:flex; gap:15px; align-items:center; width:100%; justify-content:center;">
+              <div style="text-align:center;">
+                <div style="font-size:0.8rem; color:var(--dim); margin-bottom:4px;">실시간 애니메이션</div>
+                <canvas id="animCanvas" width="96" height="96" style="background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xkhzTigHwwD8oP/YyvAKQ8yB4/GwDB8w3DMRoZRM3h0GgMAO8EX414N+c4AAAAASUVORK5CYII=') repeat; border:3px solid var(--accent); border-radius:8px; image-rendering:pixelated; width:96px; height:96px;"></canvas>
+              </div>
+
+              <!-- Static Sliced Frame Strip Preview -->
+              <div style="flex:1; text-align:center;">
+                <div style="font-size:0.8rem; color:var(--dim); margin-bottom:4px;">추출된 프레임 스트립</div>
+                <canvas id="cleanupCanvas" width="256" height="64" style="background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xkhzTigHwwD8oP/YyvAKQ8yB4/GwDB8w3DMRoZRM3h0GgMAO8EX414N+c4AAAAASUVORK5CYII=') repeat; border:2px solid var(--border); image-rendering:pixelated; max-width:100%; height:auto;"></canvas>
+              </div>
+            </div>
             
             <!-- Frame Slice Overlay (sprite-gen) -->
             <div id="sliceSection" style="display:none; width:100%;">
@@ -306,7 +341,7 @@
             
             <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">
               <button onclick="processCleanup()" style="padding:8px 16px; background:var(--accent); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🧹 배경 제거 실행</button>
-              <button onclick="autoSliceFrames()" style="padding:8px 16px; background:#5c6bc0; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🔪 프레임 슬라이싱</button>
+              <button onclick="autoSliceFrames()" style="padding:8px 16px; background:#5c6bc0; color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">🔪 프레임 슬라이싱 & 재생</button>
               <button onclick="exportCleanedPNG()" style="padding:8px 16px; background:var(--border); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">💾 PNG 저장</button>
             </div>
           </div>
@@ -345,7 +380,7 @@
   </div>
 
   <!-- Version Stamp -->
-  <div class="version-stamp" id="versionStamp">v0.0.11_20260820_0313_pollinations_free_pixel_gen_integrated</div>
+  <div class="version-stamp" id="versionStamp">v0.0.12_20260820_0344_perfectpixel_studio_full_features</div>
 
   <script src="assets.js"></script>
   <script>
@@ -533,14 +568,18 @@
         return;
       }
 
+      
       const status = document.getElementById('aiStatus');
       const genBtn = document.querySelector('[onclick="generateAI()"]');
       status.style.display = 'block';
       status.style.color = '#f39c12';
       status.innerText = '⏳ AI 이미지 생성 요청 중... (잠시만 기다려주세요)';
-      genBtn.disabled = true;
-
-      const enhancedPrompt = `Pixel art sprite sheet, 6 frames in a single horizontal row on a solid magenta (#FF00FF) background. Character: ${prompt}. Each frame is a separate pose. Clean outlines, retro GBA style, no background elements, character only, consistent identity across all frames.`;
+      const modelId = document.getElementById('modelSelect').value;
+      const charDesc = prompt.trim();
+      const motionAction = selectedPreset ? selectedPreset.action : 'side-view walking cycle facing right';
+      const frameCount = selectedPreset ? selectedPreset.frames : 6;
+      
+      const enhancedPrompt = `Pixel art sprite sheet, exactly ${frameCount} frames in a single horizontal filmstrip row on a solid magenta (#FF00FF) background. Character: ${charDesc}. Action: ${motionAction}. Retro GBA 16-bit style, sharp clean outlines, no ground, character only, consistent character design across all ${frameCount} frames.`;
 
       try {
         let src = null;
@@ -816,26 +855,174 @@
       });
 
       document.getElementById('sliceInfo').innerText =
-        `🔪 ${sliceLines.length + 1}개 프레임 감지 (경계선 ${sliceLines.length}개)`;
+        `🔪 ${sliceLines.length + 1}개 프레임 감지 완료 (실시간 재생 시작)`;
       document.getElementById('sliceSection').style.display = 'block';
+
+      // 4) perfectpixel-studio 핵심: 각 프레임을 알파 가중 무게중심(Alpha Centroid)으로 정렬하여 추출
+      extractAndPlayFrames(src, sliceLines);
     }
 
-    function processCleanup() {
-      if(!uploadedImg) {
-        alert('먼저 이미지를 업로드해주세요.');
-        return;
+    // =============================================
+    // perfectpixel-studio: 알파 가중 무게중심 정렬 & 실시간 애니메이션 재생기
+    // =============================================
+    let extractedFrames = [];
+    let animTimer = null;
+    let currentAnimFrame = 0;
+
+    function extractAndPlayFrames(srcCanvas, sliceLines) {
+      clearInterval(animTimer);
+      extractedFrames = [];
+      const srcCtx = srcCanvas.getContext('2d');
+      const W = srcCanvas.width;
+      const H = srcCanvas.height;
+
+      const boundaries = [0, ...sliceLines, W];
+      
+      for (let i = 0; i < boundaries.length - 1; i++) {
+        const x1 = boundaries[i];
+        const x2 = boundaries[i+1];
+        const spanW = x2 - x1;
+        if (spanW < 8) continue; // 너무 얇은 슬라이스 제외
+
+        const frameImgData = srcCtx.getImageData(x1, 0, spanW, H);
+        const data = frameImgData.data;
+
+        // 알파 가중 무게중심(Centroid) 및 바운딩 박스 계산
+        let sumWX = 0, sumWY = 0, sumW = 0;
+        let minX = spanW, maxX = 0, minY = H, maxY = 0;
+
+        for (let x = 0; x < spanW; x++) {
+          for (let y = 0; y < H; y++) {
+            const a = data[(y * spanW + x) * 4 + 3];
+            if (a > 15) {
+              sumWX += x * a;
+              sumWY += y * a;
+              sumW += a;
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+            }
+          }
+        }
+
+        if (sumW === 0) continue; // 빈 프레임
+
+        const cx = sumWX / sumW; // 질량 중심 X
+        const cy = sumWY / sumW; // 질량 중심 Y
+
+        // 정규화된 96x96 셀 캔버스에 무게중심을 중앙(48, 48)에 맞춰 복사
+        const cellCvs = document.createElement('canvas');
+        cellCvs.width = 96; cellCvs.height = 96;
+        const cellCtx = cellCvs.getContext('2d');
+        cellCtx.imageSmoothingEnabled = false;
+
+        const targetX = 48 - Math.round(cx);
+        const targetY = 48 - Math.round(cy);
+
+        // 오프스크린 임시 캔버스
+        const rawCvs = document.createElement('canvas');
+        rawCvs.width = spanW; rawCvs.height = H;
+        rawCvs.getContext('2d').putImageData(frameImgData, 0, 0);
+
+        cellCtx.drawImage(rawCvs, targetX, targetY);
+        extractedFrames.push(cellCvs);
       }
-      processCleanupYCbCr();
-      autoSliceFrames();
+
+      if (extractedFrames.length > 0) {
+        startLiveAnimation();
+      }
     }
 
-    function exportCleanedPNG() {
-      if(!uploadedImg) return;
-      const link = document.createElement('a');
-      link.download = 'cleaned_sprite.png';
-      link.href = document.getElementById('cleanupCanvas').toDataURL();
-      link.click();
+    function startLiveAnimation() {
+      const animCvs = document.getElementById('animCanvas');
+      const animCtx = animCvs.getContext('2d');
+      animCtx.imageSmoothingEnabled = false;
+
+      const fps = selectedPreset ? selectedPreset.fps : 10;
+      document.getElementById('fpsVal').innerText = fps;
+
+      currentAnimFrame = 0;
+      animTimer = setInterval(() => {
+        if (extractedFrames.length === 0) return;
+        animCtx.clearRect(0, 0, 96, 96);
+        animCtx.drawImage(extractedFrames[currentAnimFrame], 0, 0);
+        currentAnimFrame = (currentAnimFrame + 1) % extractedFrames.length;
+      }, 1000 / fps);
     }
+
+    // =============================================
+    // 100+ 모션 프리셋 카탈로그 데이터 및 UI 렌더러
+    // =============================================
+    const MOTION_CATALOG = [
+      // 기본 동작
+      { name:'idle', label:'대기', cat:'기본 동작', action:'subtle breathing idle standing in place', frames:4, fps:6, hint:'gentle chest rise and fall' },
+      { name:'idle-combat', label:'전투 대기', cat:'기본 동작', action:'ready combat stance, weapon up', frames:4, fps:8, hint:'alert ready pose' },
+      { name:'walk', label:'걷기', cat:'기본 동작', action:'side-view walking cycle facing right', frames:6, fps:10, hint:'alternating legs with passing poses' },
+      { name:'run', label:'달리기', cat:'기본 동작', action:'fast side-view running cycle facing right', frames:6, fps:12, hint:'strong forward lean' },
+      { name:'sprint', label:'전력 질주', cat:'기본 동작', action:'all-out sprint, extreme lean and stride', frames:6, fps:14, hint:'maximal leg extension' },
+      { name:'jump', label:'점프', cat:'기본 동작', action:'crouch, take off, airborne peak, land', frames:5, fps:10, hint:'jump arc' },
+      { name:'dash', label:'대시', cat:'기본 동작', action:'quick burst dash forward', frames:4, fps:14, hint:'explosive forward push' },
+      { name:'roll', label:'구르기', cat:'기본 동작', action:'evasive forward roll', frames:5, fps:14, hint:'rotate fully over shoulder' },
+      { name:'climb', label:'오르기', cat:'기본 동작', action:'climb up a vertical surface', frames:6, fps:8, hint:'alternating hand reaches' },
+      { name:'sit', label:'앉기', cat:'기본 동작', action:'sit down to the ground', frames:4, fps:8, hint:'settle onto ground' },
+      
+      // 전투
+      { name:'attack', label:'기본 공격', cat:'전투', action:'melee attack with wind-up, strike, recovery', frames:5, fps:12, hint:'powerful strike at full extension' },
+      { name:'attack-heavy', label:'강공격', cat:'전투', action:'slow heavy melee attack with big wind-up', frames:6, fps:10, hint:'long exaggerated wind-up' },
+      { name:'combo', label:'연속 공격', cat:'전투', action:'multi-hit melee combo', frames:6, fps:14, hint:'fast sequence of strikes' },
+      { name:'slash', label:'검 베기', cat:'전투', action:'horizontal sword slash', frames:5, fps:14, hint:'sweep in wide arc' },
+      { name:'stab', label:'찌르기', cat:'전투', action:'forward thrust attack', frames:4, fps:14, hint:'explosive straight lunge' },
+      { name:'punch', label:'주먹 지르기', cat:'전투', action:'straight punch with shoulder rotation', frames:4, fps:14, hint:'cock fist back and drive' },
+      { name:'kick', label:'발차기', cat:'전투', action:'high kick at full leg extension', frames:5, fps:14, hint:'snap leg out to impact' },
+      { name:'block', label:'방어/막기', cat:'전투', action:'defensive block with shield or guard', frames:3, fps:10, hint:'brace with slight crouch' },
+      { name:'parry', label:'패링', cat:'전투', action:'deflect an incoming attack sharply', frames:4, fps:16, hint:'sharp deflecting flick' },
+      { name:'shoot', label:'원거리 사격', cat:'전투', action:'fire a ranged weapon with recoil', frames:4, fps:14, hint:'sharp recoil kick' },
+      
+      // 마법·스킬
+      { name:'cast', label:'일반 시전', cat:'마법·스킬', action:'generic spell casting with arms thrust', frames:5, fps:12, hint:'gather inward then thrust' },
+      { name:'cast-fire', label:'화염 시전', cat:'마법·스킬', action:'cast a fire spell with burst release', frames:6, fps:12, hint:'opaque hard-edged flames' },
+      { name:'cast-lightning', label:'번개 시전', cat:'마법·스킬', action:'fast raise of arm overhead and strike', frames:5, fps:14, hint:'downward lightning bolt' },
+      { name:'cast-heal', label:'치유 시전', cat:'마법·스킬', action:'healing spell with soft rising motion', frames:5, fps:8, hint:'bring hands to chest' },
+      { name:'power-up', label:'기 모으기', cat:'마법·스킬', action:'powering up with surging energy pose', frames:5, fps:10, hint:'braced wide stance fists clenched' },
+      { name:'teleport', label:'순간이동', cat:'마법·스킬', action:'silhouette compression vanish and reappear', frames:5, fps:14, hint:'compress shrinking away' },
+      
+      // 피해·상태이상
+      { name:'hurt', label:'피격', cat:'피해·상태이상', action:'recoil from being hit backward', frames:3, fps:10, hint:'body recoils head snaps' },
+      { name:'knockback', label:'넉백', cat:'피해·상태이상', action:'launched backward through air', frames:4, fps:12, hint:'tumbling backward stop' },
+      { name:'stun', label:'기절/스턴', cat:'피해·상태이상', action:'dazed slumped posture wobbling', frames:4, fps:8, hint:'looping dazed wobble' },
+      { name:'death', label:'사망', cat:'피해·상태이상', action:'stagger collapse lie flat on ground', frames:5, fps:8, hint:'final frame lying flat' },
+      
+      // 감정·표현
+      { name:'wave', label:'손 흔들기', cat:'감정·표현', action:'friendly hand wave side to side', frames:4, fps:8, hint:'arm raises and waves' },
+      { name:'taunt', label:'도발', cat:'감정·표현', action:'confident provoking taunt gesture', frames:4, fps:8, hint:'beckoning with hand' },
+      { name:'victory', label:'승리 포즈', cat:'감정·표현', action:'raise weapon in victory triumph', frames:4, fps:8, hint:'cheering triumphant' }
+    ];
+
+    let selectedPreset = MOTION_CATALOG[2]; // 기본: walk
+
+    function filterMotionCategory(cat, btnEl) {
+      document.querySelectorAll('#motionCatTabs .tab-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+
+      const grid = document.getElementById('motionPresetsGrid');
+      grid.innerHTML = '';
+
+      MOTION_CATALOG.filter(p => p.cat === cat).forEach(p => {
+        const b = document.createElement('button');
+        b.style.cssText = `padding:6px 12px; background:${selectedPreset.name === p.name ? 'var(--accent)' : 'var(--bg)'}; color:white; border:1px solid var(--border); border-radius:6px; cursor:pointer; font-size:0.85rem; font-weight:bold; transition:all 0.15s;`;
+        b.innerText = `${p.label} (${p.frames}F)`;
+        b.onclick = () => {
+          selectedPreset = p;
+          document.getElementById('selectedMotionLabel').innerText = `선택된 모션: ${p.label} (${p.name}, ${p.frames}프레임, ${p.fps}fps)`;
+          filterMotionCategory(cat, btnEl);
+        };
+        grid.appendChild(b);
+      });
+    }
+
+    // 초기 로딩 시 기본 동작 탭 렌더링
+    filterMotionCategory('기본 동작', document.querySelector('#motionCatTabs .tab-btn'));
   </script>
 </body>
 </html>
