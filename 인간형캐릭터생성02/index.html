@@ -113,6 +113,84 @@
       color: var(--dim);
     }
 
+    /* SPUM Mode Layout */
+    .canvas-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #1e2130;
+      border-right: 1px solid var(--border);
+    }
+    #charCanvas {
+      background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYNgvwMDA/xkhzTigHwwD8oP/YyvAKQ8yB4/GwDB8w3DMRoZRM3h0GgMAO8EX414N+c4AAAAASUVORK5CYII=') repeat;
+      image-rendering: pixelated;
+      width: 256px; height: 256px;
+      border: 4px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+    }
+    .controls button {
+      background: var(--border);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .controls button:hover { background: var(--accent); }
+
+    .parts-panel {
+      width: 320px;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+    }
+    .category-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--dim);
+      padding: 12px 0;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .tab-btn.active {
+      color: var(--accent);
+      border-bottom: 2px solid var(--accent);
+    }
+    .parts-grid {
+      padding: 15px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      overflow-y: auto;
+    }
+    .part-btn {
+      background: var(--bg);
+      border: 2px solid var(--border);
+      padding: 15px 5px;
+      text-align: center;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .part-btn.active {
+      border-color: var(--accent);
+    }
+    
     /* Footer / Version Stamp */
     .version-stamp {
       position: fixed;
@@ -153,29 +231,143 @@
       <h1 id="headerTitle">✨ Pixel Studio</h1>
       <button class="btn-home" onclick="goHome()">🏠 처음으로</button>
     </header>
+    
     <div class="workspace" id="workspaceContent">
-      <!-- Editor content will be injected here -->
-      선택된 모드의 에디터 화면이 로드됩니다.
+      
+      <!-- AI Mode View -->
+      <div id="aiModeView" style="display:none; flex-direction:column; width:100%; height:100%; padding:20px;">
+        <h2>🧠 통합 AI 생성 모드</h2>
+        <p style="font-size:1rem; margin-top:10px;">프롬프트를 입력하여 캐릭터와 모션을 자동 생성합니다. (Step 4 예정)</p>
+      </div>
+
+      <!-- SPUM Assembly Mode View -->
+      <div id="spumModeView" style="display:none; width:100%; height:100%;">
+        <!-- Left: Canvas -->
+        <div class="canvas-container">
+          <canvas id="charCanvas" width="128" height="128"></canvas>
+          <div class="controls">
+            <button onclick="randomize()">🎲 랜덤</button>
+            <button onclick="exportPNG()">💾 PNG 저장</button>
+          </div>
+        </div>
+        
+        <!-- Right: Parts UI -->
+        <div class="parts-panel">
+          <div class="category-tabs">
+            <button class="tab-btn active" onclick="setTab('head')">머리</button>
+            <button class="tab-btn" onclick="setTab('body')">몸통</button>
+            <button class="tab-btn" onclick="setTab('weapon')">무기</button>
+          </div>
+          <div class="parts-grid" id="partsGrid"></div>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- Version Stamp -->
-  <div class="version-stamp" id="versionStamp">v0.0.1_20260820_0245_step1_init</div>
+  <div class="version-stamp" id="versionStamp">v0.0.3_20260820_0246_step2_assembly</div>
 
+  <script src="assets.js"></script>
   <script>
+    // State
+    const state = { head: 'head_01', body: 'body_01', weapon: 'weapon_01' };
+    const partsLib = {
+      head: ['head_01', 'head_02'],
+      body: ['body_01'],
+      weapon: ['weapon_01', '']
+    };
+    
+    let currentTab = 'head';
+    let loadedImages = {};
+
+    function initSpum() {
+      // Preload images
+      let promises = [];
+      for(let key in ASSETS) {
+        promises.push(new Promise((resolve) => {
+          let img = new Image();
+          img.onload = () => { loadedImages[key] = img; resolve(); };
+          img.src = ASSETS[key];
+        }));
+      }
+      Promise.all(promises).then(() => {
+        setTab('head');
+        renderCanvas();
+      });
+    }
+
+    function renderCanvas() {
+      const cvs = document.getElementById('charCanvas');
+      const ctx = cvs.getContext('2d');
+      ctx.clearRect(0, 0, cvs.width, cvs.height);
+      
+      // Scaling for sharp pixels
+      ctx.imageSmoothingEnabled = false;
+      ctx.save();
+      ctx.scale(2, 2); // 64x64 upscaled to 128x128
+
+      // Layer Order: Body -> Head -> Weapon
+      if(state.body && loadedImages[state.body]) ctx.drawImage(loadedImages[state.body], 0, 0);
+      if(state.head && loadedImages[state.head]) ctx.drawImage(loadedImages[state.head], 0, 0);
+      if(state.weapon && loadedImages[state.weapon]) ctx.drawImage(loadedImages[state.weapon], 0, 0);
+
+      ctx.restore();
+    }
+
+    function setTab(cat) {
+      currentTab = cat;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event && event.target.classList.add('active');
+      
+      const grid = document.getElementById('partsGrid');
+      grid.innerHTML = '';
+      
+      partsLib[cat].forEach(pKey => {
+        let btn = document.createElement('div');
+        btn.className = 'part-btn' + (state[cat] === pKey ? ' active' : '');
+        btn.innerText = pKey || 'None';
+        btn.onclick = () => {
+          state[cat] = pKey;
+          setTab(cat);
+          renderCanvas();
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function randomize() {
+      state.head = partsLib.head[Math.floor(Math.random()*partsLib.head.length)];
+      state.weapon = partsLib.weapon[Math.floor(Math.random()*partsLib.weapon.length)];
+      setTab(currentTab);
+      renderCanvas();
+    }
+
+    function exportPNG() {
+      const link = document.createElement('a');
+      link.download = 'character.png';
+      link.href = document.getElementById('charCanvas').toDataURL();
+      link.click();
+    }
+
+    // Routing
     function selectMode(mode) {
       document.getElementById('startScreen').style.display = 'none';
       document.getElementById('appContainer').style.display = 'flex';
       
       const title = document.getElementById('headerTitle');
-      const ws = document.getElementById('workspaceContent');
+      const aiView = document.getElementById('aiModeView');
+      const spumView = document.getElementById('spumModeView');
       
       if(mode === 'ai') {
         title.innerHTML = '🧠 통합 AI 생성 모드 (Prompt-to-Sprite)';
-        ws.innerHTML = 'AI 생성 모드 UI 준비중... (Step 4 예정)';
+        aiView.style.display = 'flex';
+        spumView.style.display = 'none';
       } else {
         title.innerHTML = '🧩 파츠 조립 모드 (SPUM Style)';
-        ws.innerHTML = '파츠 조립 모드 UI 준비중... (Step 2 예정)';
+        aiView.style.display = 'none';
+        spumView.style.display = 'flex';
+        initSpum();
       }
     }
 
