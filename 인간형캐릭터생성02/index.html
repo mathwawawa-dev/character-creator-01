@@ -380,7 +380,7 @@
   </div>
 
   <!-- Version Stamp -->
-  <div class="version-stamp" id="versionStamp">v0.0.12_20260820_0344_perfectpixel_studio_full_features</div>
+  <div class="version-stamp" id="versionStamp">v0.0.13_20260820_0348_fix_startscreen_click_bug</div>
 
   <script src="assets.js"></script>
   <script>
@@ -532,10 +532,18 @@
     // ==========================================
     let uploadedImg = null;
 
-    document.getElementById('imageUpload').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if(!file) return;
-      loadUploadedImage(URL.createObjectURL(file));
+    // DOM 완전 로드 후 이벤트 연결 (startScreen 클릭 무반응 버그 원인 차단)
+    window.addEventListener('DOMContentLoaded', function() {
+      const imageUpload = document.getElementById('imageUpload');
+      if (imageUpload) {
+        imageUpload.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          loadUploadedImage(URL.createObjectURL(file));
+        });
+      }
+      // 모션 카탈로그 초기 렌더링 (DOM 준비 후 실행)
+      filterMotionCategory('기본 동작', document.querySelector('#motionCatTabs .tab-btn'));
     });
 
     function loadUploadedImage(src) {
@@ -1021,8 +1029,6 @@
       });
     }
 
-    // 초기 로딩 시 기본 동작 탭 렌더링
-    filterMotionCategory('기본 동작', document.querySelector('#motionCatTabs .tab-btn'));
   </script>
 </body>
 </html>
