@@ -10,15 +10,39 @@
     <div class="container">
         <h1>스타팅 슬라임 선택</h1>
         <div class="canvas-container">
-            <canvas id="slimeCanvas" width="160" height="160"></canvas>
+            <canvas id="slimeCanvas" width="32" height="32"></canvas>
         </div>
         <div class="controls">
-            <button id="generateBtn">새 슬라임 생성</button>
-            <input type="color" id="slimeColor" value="#00ff00">
+            <div class="control-group">
+                <label for="bodySelect">바디 타입:</label>
+                <select id="bodySelect">
+                    <option value="0">클래식</option>
+                    <option value="1">물방울</option>
+                    <option value="2">넓적한</option>
+                    <option value="3">삐죽한</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="eyeSelect">눈 타입:</label>
+                <select id="eyeSelect">
+                    <option value="0">기본</option>
+                    <option value="1">점</option>
+                    <option value="2">화난 눈</option>
+                    <option value="3">큰 눈</option>
+                    <option value="4">감은 눈</option>
+                    <option value="5">게슴츠레</option>
+                    <option value="6">외눈</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="slimeColor">바디 색상:</label>
+                <input type="color" id="slimeColor" value="#00ff00">
+            </div>
+            <button id="generateBtn">🎲 모두 랜덤</button>
         </div>
         
         <div class="version-info">
-            v1.0.1_20260820_040157_바디눈다양화
+            v1.0.2_20260820_040628_해상도증가및옵션추가
         </div>
     </div>
     <script src="script.js"></script>

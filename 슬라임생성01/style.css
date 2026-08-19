@@ -13,24 +13,56 @@ body {
     background-color: #34495e;
     padding: 2rem;
     border-radius: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    width: 320px;
 }
 canvas {
     background-color: transparent;
     border: 2px dashed #7f8c8d;
     image-rendering: pixelated;
     border-radius: 8px;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
+    width: 256px;
+    height: 256px;
 }
 .controls {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+}
+.control-group {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 15px;
+    background: #2c3e50;
+    padding: 10px 15px;
+    border-radius: 5px;
+}
+.control-group label {
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+select, input[type="color"] {
+    padding: 5px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+select {
+    background: #ecf0f1;
+    color: #2c3e50;
+}
+input[type="color"] {
+    width: 50px;
+    height: 30px;
+    padding: 0;
 }
 button {
-    padding: 0.6rem 1.2rem;
-    font-size: 1rem;
+    margin-top: 10px;
+    padding: 0.8rem;
+    font-size: 1.1rem;
     cursor: pointer;
     border: none;
     border-radius: 5px;
@@ -41,15 +73,6 @@ button {
 }
 button:hover {
     background-color: #2980b9;
-}
-input[type="color"] {
-    padding: 0;
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    background-color: transparent;
 }
 .version-info {
     margin-top: 2rem;
