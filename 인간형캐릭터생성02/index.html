@@ -134,7 +134,22 @@
     .controls {
       margin-top: 20px;
       display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      padding: 0 40px;
+    }
+    .color-picker-row {
+      display: flex;
+      align-items: center;
       gap: 10px;
+      color: var(--dim);
+      font-size: 0.9rem;
+    }
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
     }
     .controls button {
       background: var(--border);
@@ -281,8 +296,14 @@
         <div class="canvas-container">
           <canvas id="charCanvas" width="128" height="128"></canvas>
           <div class="controls">
-            <button onclick="randomize()">🎲 랜덤</button>
-            <button onclick="exportPNG()">💾 PNG 저장</button>
+            <div class="color-picker-row">
+              <label>머리 색상: <input type="color" id="tintHead" value="#ffffff" onchange="renderCanvas()"></label>
+              <label>몸통 색상: <input type="color" id="tintBody" value="#ffffff" onchange="renderCanvas()"></label>
+            </div>
+            <div class="btn-row">
+              <button onclick="randomize()">🎲 파츠 랜덤</button>
+              <button onclick="exportPNG()">💾 PNG 저장</button>
+            </div>
           </div>
         </div>
         
@@ -332,6 +353,39 @@
       });
     }
 
+    function drawTinted(ctx, img, tintHex) {
+      if(!img) return;
+      if(tintHex === '#ffffff') {
+        ctx.drawImage(img, 0, 0);
+        return;
+      }
+      
+      // Create offscreen canvas for tinting
+      const offCvs = document.createElement('canvas');
+      offCvs.width = img.width;
+      offCvs.height = img.height;
+      const offCtx = offCvs.getContext('2d');
+      
+      // Draw original image
+      offCtx.drawImage(img, 0, 0);
+      
+      // Apply color tint using multiply
+      offCtx.globalCompositeOperation = 'source-in';
+      offCtx.fillStyle = tintHex;
+      offCtx.fillRect(0, 0, offCvs.width, offCvs.height);
+      
+      // Re-apply original image with multiply to keep shading
+      offCtx.globalCompositeOperation = 'multiply';
+      offCtx.drawImage(img, 0, 0);
+      
+      // Re-apply alpha channel strictly from original image
+      offCtx.globalCompositeOperation = 'destination-in';
+      offCtx.drawImage(img, 0, 0);
+
+      // Draw final result to main canvas
+      ctx.drawImage(offCvs, 0, 0);
+    }
+
     function renderCanvas() {
       const cvs = document.getElementById('charCanvas');
       const ctx = cvs.getContext('2d');
@@ -342,9 +396,13 @@
       ctx.save();
       ctx.scale(2, 2); // 64x64 upscaled to 128x128
 
+      const headTint = document.getElementById('tintHead').value;
+      const bodyTint = document.getElementById('tintBody').value;
+
       // Layer Order: Body -> Head -> Weapon
-      if(state.body && loadedImages[state.body]) ctx.drawImage(loadedImages[state.body], 0, 0);
-      if(state.head && loadedImages[state.head]) ctx.drawImage(loadedImages[state.head], 0, 0);
+      if(state.body && loadedImages[state.body]) drawTinted(ctx, loadedImages[state.body], bodyTint);
+      if(state.head && loadedImages[state.head]) drawTinted(ctx, loadedImages[state.head], headTint);
+      // Weapons are usually not tinted
       if(state.weapon && loadedImages[state.weapon]) ctx.drawImage(loadedImages[state.weapon], 0, 0);
 
       ctx.restore();
