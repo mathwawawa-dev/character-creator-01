@@ -1,0 +1,11 @@
+{
+  "fire":     { "primary": "#E84C1E", "secondary": "#F5A623", "highlight": "#FFF3A3", "shadow": "#8B1A00" },
+  "water":    { "primary": "#2E8BD6", "secondary": "#7EC8E3", "highlight": "#D6F0FF", "shadow": "#0A3D6B" },
+  "grass":    { "primary": "#4CAF50", "secondary": "#A5D6A7", "highlight": "#E8F5E9", "shadow": "#1B5E20" },
+  "electric": { "primary": "#F5D800", "secondary": "#FFE866", "highlight": "#FFFDE7", "shadow": "#7B6200" },
+  "rock":     { "primary": "#795548", "secondary": "#A1887F", "highlight": "#D7CCC8", "shadow": "#3E2723" },
+  "ice":      { "primary": "#80DEEA", "secondary": "#B2EBF2", "highlight": "#E0F7FA", "shadow": "#006064" },
+  "dark":     { "primary": "#5C3D8F", "secondary": "#9575CD", "highlight": "#D1C4E9", "shadow": "#1A0030" },
+  "light":    { "primary": "#FFD54F", "secondary": "#FFF9C4", "highlight": "#FFFFFF", "shadow": "#F57F17" },
+  "wind":     { "primary": "#80CBC4", "secondary": "#B2DFDB", "highlight": "#E0F2F1", "shadow": "#004D40" }
+}

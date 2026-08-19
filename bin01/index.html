@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>포켓몬 RPG 캐릭터 생성기</title>
+<script src="parts_data.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+:root{
+  --bg:#0b0d19; --panel:#12162a; --panel-light:#1c233f; --border:#ff7b00;
+  --accent:#ff5500; --accent2:#00e5ff; --gold:#ffcc00;
+  --text:#ffffff; --dim:#8fa0cc; --canvas-bg:#080a14; --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background: radial-gradient(circle at center, #1b2144 0%, #080a14 100%);
+  color:var(--text);font-family:'Noto Sans KR',sans-serif;font-size:13px;
+  min-height:100vh;display:flex;flex-direction:column;
+}
+
+header{
+  background: rgba(18, 22, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border-bottom: 2px solid #2a3460;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+header h1{font-size:18px;font-weight:900;letter-spacing:-0.5px;color:#fff;display:flex;align-items:center;gap:8px;}
+.badge{background:var(--accent);color:#fff;font-size:10px;font-weight:900;padding:3px 9px;border-radius:20px}
+.mode-toggle{
+  margin-left:auto;
+  display:flex;
+  gap:6px;
+  background:#0b0e1d;
+  padding:4px;
+  border-radius:30px;
+  border:1px solid #2a3460;
+}
+.mode-btn{
+  background:transparent;
+  border:none;
+  color:var(--dim);
+  padding:6px 14px;
+  border-radius:20px;
+  font-size:11px;
+  font-weight:700;
+  cursor:pointer;
+  transition:.2s;
+  font-family:inherit;
+}
+.mode-btn.active{
+  background:var(--accent);
+  color:#fff;
+  box-shadow:0 0 10px rgba(255,85,0,0.5);
+}
+
+.workspace{display:grid;grid-template-columns:280px 1fr 280px;flex:1;overflow:hidden;gap:1px;background:#181f3d;}
+
+/* LEFT PANEL */
+.panel-left{background:var(--panel);display:flex;flex-direction:column;overflow-y:auto}
+.p-sec{border-bottom:1px solid #1f2747;padding:14px}
+.p-sec h3{font-size:11px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.cat-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.cat-tab{background:#1a213f;border:1px solid #2a3560;color:var(--dim);font-size:11px;padding:5px 10px;border-radius:6px;cursor:pointer;transition:.15s;font-family:inherit;font-weight:700;}
+.cat-tab:hover,.cat-tab.active{background:var(--accent2);color:#080a14;border-color:var(--accent2);font-weight:900;}
+
+.part-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.part-item{
+  background:var(--canvas-bg);
+  border:2px solid #222b4c;
+  border-radius:8px;
+  cursor:pointer;
+  transition:.15s;
+  aspect-ratio:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+}
+.part-item:hover{border-color:var(--accent2);transform:scale(1.04)}
+.part-item.sel{border-color:var(--gold);box-shadow:0 0 12px rgba(255,204,0,0.5)}
+.part-item canvas{width:100%;height:100%;image-rendering:pixelated}
+.part-item .lbl{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:#fff;background:rgba(0,0,0,0.7);padding:2px 0;font-weight:700;}
+.part-none{background:var(--canvas-bg);border:2px dashed #2a3560;border-radius:8px;cursor:pointer;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--dim);transition:.15s}
+.part-none:hover{border-color:var(--accent2)}
+.part-none.sel{border-color:var(--gold)}
+
+/* CENTER PANEL */
+.panel-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:30px;position:relative;}
+.canvas-wrap{
+  background: radial-gradient(circle, #1a2247 0%, #090c18 100%);
+  border:3px solid #ffcc00;
+  border-radius:16px;
+  padding:24px;
+  box-shadow:0 0 40px rgba(0,0,0,0.8), 0 0 20px rgba(255,204,0,0.2);
+  position:relative;
+}
+#main{display:block;image-rendering:pixelated;width:288px;height:288px}
+.canvas-sub{text-align:center;color:var(--gold);font-size:11px;font-weight:700;margin-top:10px;letter-spacing:1px;}
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.btn{border:none;padding:10px 18px;border-radius:8px;font-size:12px;font-weight:900;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px}
+.btn-p{background:linear-gradient(135deg,#ff5500,#ff8800);color:#fff;box-shadow:0 4px 15px rgba(255,85,0,0.4)}
+.btn-s{background:linear-gradient(135deg,#00b4d8,#0077b6);color:#fff;box-shadow:0 4px 15px rgba(0,180,216,0.4)}
+.btn-g{background:#232b50;color:#fff;border:1px solid #3c4879}
+.btn:hover{filter:brightness(1.2);transform:translateY(-2px)}.btn:active{transform:translateY(0)}
+
+/* RIGHT PANEL */
+.panel-right{background:var(--panel);display:flex;flex-direction:column;overflow-y:auto}
+.r-sec{border-bottom:1px solid #1f2747;padding:14px}
+.r-sec h3{font-size:11px;font-weight:900;color:var(--gold);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prop-lbl{font-size:11px;color:var(--dim);width:40px;flex-shrink:0;font-weight:700;}
+.prop-in{flex:1;background:#0d1122;border:1px solid #2a3560;border-radius:6px;color:#fff;font-size:12px;padding:7px 10px;font-family:inherit;font-weight:700;}
+.prop-in:focus{outline:none;border-color:var(--accent2)}
+.type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.type-btn{background:#0d1122;border:2px solid #20294c;color:var(--dim);font-size:11px;font-weight:900;padding:7px 2px;border-radius:8px;cursor:pointer;font-family:inherit;text-align:center;transition:.15s;line-height:1.3}
+.type-btn:hover{border-color:var(--accent2);color:#fff}
+.type-btn.active{border-color:#fff;color:#fff;box-shadow:0 0 10px rgba(255,255,255,0.4)}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.swatch{width:28px;height:28px;border-radius:50%;border:2px solid #000;cursor:pointer;transition:.15s}
+.swatch.active{border-color:#fff;box-shadow:0 0 8px #fff}
+.stat-row{margin-bottom:10px}
+.stat-hd{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;font-weight:700;}
+.stat-nm{color:var(--dim)}
+.stat-vl{color:var(--gold);font-weight:900}
+.stat-sl{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:#1b2242;outline:none;cursor:pointer}
+.stat-sl::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent2);cursor:pointer;transition:.1s}
+.json-box{background:#090b16;border:1px solid #1d2547;border-radius:6px;padding:10px;font-family:'Courier New',monospace;font-size:10px;color:var(--dim);line-height:1.5;white-space:pre;overflow:auto;margin-top:6px;max-height:120px}
+.jk{color:#7dd3fc}.js{color:#86efac}.jn{color:var(--gold)}
+
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(60px);background:#ff5500;color:#fff;padding:10px 24px;border-radius:40px;font-size:13px;font-weight:900;transition:.3s;z-index:9999;pointer-events:none;box-shadow:0 4px 20px rgba(255,85,0,0.5);}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* Version stamp */
+.version-stamp{
+  text-align:center;
+  padding:8px;
+  font-size:10px;
+  color:#5d6b94;
+  background:#070912;
+  border-top:1px solid #171d38;
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>👾 포켓몬 RPG 생명체 에디터</h1>
+  <span class="badge">v2.7.0_2026-08-20_02:02_move_to_bin01_and_git_push</span>
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btnModeOriginal" onclick="setMode('original')">✨ 완성형 오리지널 생명체</button>
+    <button class="mode-btn" id="btnModeParts" onclick="setMode('parts')">🧩 부위별 조립 에디터</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <!-- Left -->
+  <div class="panel-left">
+    <div class="p-sec">
+      <h3 id="leftPanelTitle">생명체 선택</h3>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="part-grid" id="partGrid"></div>
+    </div>
+  </div>
+
+  <!-- Center -->
+  <div class="panel-center">
+    <div class="canvas-wrap">
+      <canvas id="main" width="96" height="96"></canvas>
+      <div class="canvas-sub" id="canvasSub">96 × 96 · 픽셀 렌더링</div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-g" id="btnRand">🎲 랜덤</button>
+      <button class="btn btn-s" id="btnPng">⬇ PNG 다운로드</button>
+      <button class="btn btn-p" id="btnJson">📄 JSON 저장</button>
+    </div>
+  </div>
+
+  <!-- Right -->
+  <div class="panel-right">
+    <div class="r-sec">
+      <h3>기본 정보</h3>
+      <div class="prop-row"><span class="prop-lbl">이름</span><input class="prop-in" id="pName" type="text" placeholder="예: 플래마" maxlength="12"></div>
+    </div>
+    <div class="r-sec"><h3>속성 타입</h3><div class="type-grid" id="typeGrid"></div></div>
+    <div class="r-sec"><h3>색상 팔레트</h3><div class="swatches" id="swatches"></div></div>
+    <div class="r-sec"><h3>스탯 능력치</h3><div id="statsBox"></div></div>
+    <div class="r-sec"><h3>JSON 데이터</h3><div class="json-box" id="jsonBox"></div></div>
+  </div>
+</div>
+<div class="version-stamp">v2.7.0_2026-08-20_02:02_move_to_bin01_and_git_push</div>
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// PALETTES
+// ══════════════════════════════════════════
+const PAL = {
+  fire:    {p:'#E84C1E',s:'#F5A623',h:'#FFF3A3',d:'#8B1A00',e:'🔥',l:'불꽃'},
+  water:   {p:'#2E8BD6',s:'#7EC8E3',h:'#D6F0FF',d:'#0A3D6B',e:'💧',l:'물'},
+  grass:   {p:'#4CAF50',s:'#A5D6A7',h:'#E8F5E9',d:'#1B5E20',e:'🌿',l:'풀'},
+  electric:{p:'#F5D800',s:'#FFE866',h:'#FFFDE7',d:'#7B6200',e:'⚡',l:'번개'},
+  rock:    {p:'#795548',s:'#A1887F',h:'#D7CCC8',d:'#3E2723',e:'🪨',l:'바위'},
+  ice:     {p:'#80DEEA',s:'#B2EBF2',h:'#E0F7FA',d:'#006064',e:'🧊',l:'얼음'},
+  dark:    {p:'#5C3D8F',s:'#9575CD',h:'#D1C4E9',d:'#1A0030',e:'🌑',l:'어둠'},
+  light:   {p:'#FFD54F',s:'#FFF9C4',h:'#FFFFFF',d:'#F57F17',e:'✨',l:'빛'},
+  wind:    {p:'#80CBC4',s:'#B2DFDB',h:'#E0F2F1',d:'#004D40',e:'🌀',l:'바람'},
+};
+
+// ══════════════════════════════════════════
+// ORIGINAL MOCKUP CREATURE PRESETS (단일 투명 PNG 로딩)
+// ══════════════════════════════════════════
+const ORIGINAL_PRESETS = [
+  { id:'00_cute_blob',     name:'블롭(기본)',      type:'grass',    pngKey:'00_cute_blob',     l:'점프 블롭' },
+  { id:'10_mini_blob',     name:'미니블롭',        type:'grass',    pngKey:'10_mini_blob',     l:'스탠딩 블롭' },
+  { id:'11_spiky_blob',    name:'가시블롭',        type:'grass',    pngKey:'11_spiky_blob',    l:'가시 블롭' },
+  { id:'12_antenna_blob',  name:'더듬이블롭',      type:'electric', pngKey:'12_antenna_blob',  l:'더듬이 블롭' },
+  { id:'13_fluffy_blob',   name:'구름블롭',        type:'wind',     pngKey:'13_fluffy_blob',   l:'구름 블롭' },
+  { id:'01_fire_spirit',   name:'플레임스프릿',    type:'fire',     pngKey:'01_fire_spirit',   l:'불꽃 정령' },
+  { id:'02_water_slime',   name:'아쿠아드롭',      type:'water',    pngKey:'02_water_slime',   l:'물방울 슬라임' },
+  { id:'03_grass_sprout',  name:'새싹이',          type:'grass',    pngKey:'03_grass_sprout',  l:'풀잎 새싹몬' },
+  { id:'04_electric_bolt', name:'볼트치크',        type:'electric', pngKey:'04_electric_bolt', l:'번개 볼트몬' },
+  { id:'05_rock_golem',    name:'골렘록',          type:'rock',     pngKey:'05_rock_golem',    l:'바위 골렘' },
+  { id:'06_ice_crystal',   name:'크리스탈릭',      type:'ice',      pngKey:'06_ice_crystal',   l:'얼음 결정체' },
+  { id:'07_dark_ghost',    name:'섀도우위스프',     type:'dark',     pngKey:'07_dark_ghost',    l:'어둠 그림자' },
+  { id:'08_light_fairy',   name:'루미나',          type:'light',    pngKey:'08_light_fairy',   l:'빛 요정' },
+  { id:'09_wind_bird',     name:'바람새',          type:'wind',     pngKey:'09_wind_bird',     l:'바람새' },
+];
+
+// ══════════════════════════════════════════
+// PARTS DEFINITIONS (부위별 조립 모드용)
+// ══════════════════════════════════════════
+const HEAD_CY   = 0.35;
+const HEAD_CX   = 0.50;
+const HEAD_SCALE= 0.44;
+
+const LAYER_POS = {
+  legs:      { cx:0.50, cy:0.83, scale:0.42, tint:true  },
+  arms:      { cx:0.50, cy:0.62, scale:0.54, tint:true  },
+  torso:     { cx:0.50, cy:0.64, scale:0.42, tint:true  },
+  acc_back:  { cx:0.50, cy:0.66, scale:0.50, tint:true  },
+  head:      { cx:HEAD_CX, cy:HEAD_CY, scale:HEAD_SCALE, tint:true },
+  acc_top:   { cx:HEAD_CX, cy:HEAD_CY-0.19, scale:0.32, tint:true  },
+  eyes:      { cx:HEAD_CX, cy:HEAD_CY+0.01, scale:0.24, tint:false },
+  mouth:     { cx:HEAD_CX, cy:HEAD_CY+0.12, scale:0.16, tint:false },
+};
+
+const RENDER_ORDER = ['legs','arms','torso','acc_back','head','acc_top','eyes','mouth'];
+
+const CATS = {
+  head: { label:'머리', layer:'head', parts:[
+    {id:'round',   l:'동그란',   src:'head', sx:0.00,sy:0.02,sw:0.25,sh:0.46},
+    {id:'oval',    l:'타원',     src:'head', sx:0.25,sy:0.02,sw:0.25,sh:0.46},
+    {id:'square',  l:'네모',     src:'head', sx:0.50,sy:0.02,sw:0.25,sh:0.46},
+    {id:'diamond', l:'다이아',   src:'head', sx:0.75,sy:0.02,sw:0.25,sh:0.46},
+    {id:'diamond2',l:'마름모',   src:'head', sx:0.00,sy:0.52,sw:0.25,sh:0.46},
+    {id:'cloud',   l:'구름',     src:'head', sx:0.25,sy:0.52,sw:0.25,sh:0.46},
+    {id:'bumpy',   l:'울퉁불퉁', src:'head', sx:0.50,sy:0.52,sw:0.25,sh:0.46},
+    {id:'heart',   l:'하트',     src:'head', sx:0.75,sy:0.52,sw:0.25,sh:0.46},
+  ]},
+  eyes: { label:'눈', layer:'eyes', parts:[
+    {id:'circle',  l:'동그란',  src:'eyes1', sx:0.00,sy:0.05,sw:0.46,sh:0.45},
+    {id:'sharp',   l:'날카로운',src:'eyes1', sx:0.53,sy:0.05,sw:0.47,sh:0.45},
+    {id:'sleepy',  l:'졸린',   src:'eyes1', sx:0.00,sy:0.55,sw:0.46,sh:0.45},
+    {id:'star',    l:'별눈',   src:'eyes1', sx:0.53,sy:0.55,sw:0.47,sh:0.45},
+    {id:'shocked', l:'놀란',   src:'eyes2', sx:0.00,sy:0.10,sw:0.25,sh:0.80},
+    {id:'angry',   l:'화난',   src:'eyes2', sx:0.25,sy:0.10,sw:0.25,sh:0.80},
+    {id:'sad',     l:'슬픈',   src:'eyes2', sx:0.50,sy:0.10,sw:0.25,sh:0.80},
+    {id:'spiral',  l:'소용돌이',src:'eyes2', sx:0.75,sy:0.10,sw:0.25,sh:0.80},
+  ]},
+  mouth: { label:'입', layer:'mouth', parts:[
+    {id:'smile',   l:'웃음',   src:'mouth1', sx:0.02,sy:0.20,sw:0.30,sh:0.60},
+    {id:'neutral', l:'무표정', src:'mouth1', sx:0.36,sy:0.38,sw:0.26,sh:0.25},
+    {id:'fang',    l:'이빨',   src:'mouth1', sx:0.66,sy:0.15,sw:0.32,sh:0.70},
+    {id:'open',    l:'입벌림', src:'mouth2', sx:0.01,sy:0.20,sw:0.32,sh:0.65},
+    {id:'frown',   l:'찡그림', src:'mouth2', sx:0.34,sy:0.28,sw:0.30,sh:0.45},
+    {id:'grimace', l:'악물기', src:'mouth2', sx:0.66,sy:0.18,sw:0.34,sh:0.65},
+  ]},
+  torso: { label:'몸통', layer:'torso', parts:[
+    {id:'round',  l:'둥글',  src:'torso', sx:0.00,sy:0.12,sw:0.20,sh:0.76},
+    {id:'slim',   l:'날씬',  src:'torso', sx:0.20,sy:0.12,sw:0.20,sh:0.76},
+    {id:'barrel', l:'통형',  src:'torso', sx:0.40,sy:0.12,sw:0.20,sh:0.76},
+    {id:'triangle',l:'삼각', src:'torso', sx:0.60,sy:0.12,sw:0.20,sh:0.76},
+    {id:'compact',l:'소형',  src:'torso', sx:0.80,sy:0.18,sw:0.20,sh:0.65},
+  ]},
+  arms: { label:'팔', layer:'arms', parts:[
+    {id:'none',   l:'없음', src:null},
+    {id:'stubby', l:'짧은팔', src:'arms', sx:0.00,sy:0.08,sw:0.20,sh:0.45},
+    {id:'chubby', l:'통통팔', src:'arms', sx:0.20,sy:0.02,sw:0.22,sh:0.55},
+    {id:'long',   l:'긴팔',  src:'arms', sx:0.40,sy:0.15,sw:0.20,sh:0.55},
+    {id:'fin',    l:'지느러미',src:'arms', sx:0.60,sy:0.10,sw:0.20,sh:0.55},
+    {id:'claw',   l:'발톱팔', src:'arms', sx:0.80,sy:0.10,sw:0.20,sh:0.88},
+  ]},
+  legs: { label:'다리', layer:'legs', parts:[
+    {id:'none',   l:'없음', src:null},
+    {id:'stubby', l:'짧은다리',src:'legs', sx:0.00,sy:0.10,sw:0.20,sh:0.80},
+    {id:'long',   l:'긴다리', src:'legs', sx:0.20,sy:0.10,sw:0.20,sh:0.80},
+    {id:'paw',    l:'발바닥', src:'legs', sx:0.40,sy:0.10,sw:0.20,sh:0.80},
+    {id:'flipper',l:'지느러미',src:'legs', sx:0.60,sy:0.10,sw:0.20,sh:0.80},
+    {id:'claw',   l:'발톱',  src:'legs', sx:0.80,sy:0.10,sw:0.20,sh:0.80},
+  ]},
+  acc_top: { label:'머리부속', layer:'acc_top', parts:[
+    {id:'none',       l:'없음',    src:null},
+    {id:'horn_single',l:'외뿔',    src:'acc1', sx:0.00,sy:0.50,sw:0.33,sh:0.50},
+    {id:'horn_twin',  l:'쌍뿔',    src:'acc1', sx:0.33,sy:0.50,sw:0.33,sh:0.50},
+    {id:'horn_crown', l:'왕관',    src:'acc1', sx:0.66,sy:0.50,sw:0.34,sh:0.50},
+    {id:'ear_cat',    l:'고양이귀', src:'acc2', sx:0.00,sy:0.00,sw:0.33,sh:0.50},
+    {id:'ear_dog',    l:'강아지귀', src:'acc2', sx:0.33,sy:0.00,sw:0.34,sh:0.50},
+    {id:'ear_rabbit', l:'토끼귀',  src:'acc2', sx:0.67,sy:0.00,sw:0.33,sh:0.50},
+  ]},
+  acc_back: { label:'몸부속', layer:'acc_back', parts:[
+    {id:'none',       l:'없음',    src:null},
+    {id:'tail_curl',  l:'말린꼬리', src:'acc1', sx:0.00,sy:0.00,sw:0.33,sh:0.50},
+    {id:'tail_spike', l:'뾰족꼬리', src:'acc1', sx:0.33,sy:0.00,sw:0.33,sh:0.50},
+    {id:'tail_flame', l:'불꽃꼬리', src:'acc1', sx:0.66,sy:0.00,sw:0.34,sh:0.50},
+    {id:'wing_bat',   l:'박쥐날개', src:'acc2', sx:0.00,sy:0.50,sw:0.33,sh:0.50},
+    {id:'wing_fairy', l:'요정날개', src:'acc2', sx:0.33,sy:0.50,sw:0.34,sh:0.50},
+    {id:'tail_pom',   l:'폼폼꼬리', src:'acc2', sx:0.67,sy:0.50,sw:0.33,sh:0.50},
+  ]},
+};
+
+const STATS_DEF = [
+  {k:'hp', l:'HP',   mn:20,mx:120,dv:50},
+  {k:'atk',l:'공격', mn:10,mx:100,dv:40},
+  {k:'def',l:'방어', mn:10,mx:100,dv:30},
+  {k:'spd',l:'속도', mn:10,mx:100,dv:35},
+];
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+const S = {
+  mode: 'original', // 'original' | 'parts'
+  selectedOriginal: 'blob_green',
+  cat: 'head',
+  sel: {
+    head:'round', eyes:'circle', mouth:'smile',
+    torso:'round', arms:'stubby', legs:'stubby',
+    acc_top:'none', acc_back:'none',
+  },
+  type: 'grass',
+  stats: {hp:50,atk:40,def:30,spd:35},
+  name: '블롭',
+};
+
+// ══════════════════════════════════════════
+// IMAGE LOADING
+// ══════════════════════════════════════════
+const IMGS = {};
+function getImg(key) {
+  if (IMGS[key]) return Promise.resolve(IMGS[key]);
+  let dataUri = null;
+  if (typeof CREATURE_PNGS !== 'undefined' && CREATURE_PNGS[key]) {
+    dataUri = CREATURE_PNGS[key];
+  } else if (typeof PARTS_DATA !== 'undefined' && PARTS_DATA[key]) {
+    dataUri = PARTS_DATA[key];
+  } else if (typeof MOCKUP_DATA !== 'undefined' && MOCKUP_DATA[key]) {
+    dataUri = MOCKUP_DATA[key];
+  }
+  if (!dataUri) return Promise.resolve(null);
+  return new Promise(res => {
+    const img = new Image();
+    img.onload  = () => { IMGS[key]=img; res(img); };
+    img.onerror = () => { IMGS[key]=null; res(null); };
+    img.src = dataUri;
+  });
+}
+
+// ══════════════════════════════════════════
+// CROP & TINT
+// ══════════════════════════════════════════
+const cropCache = {};
+async function cropPart(def, size=128) {
+  if (!def || !def.src) return null;
+  const cacheKey = `${def.src}|${def.id}|${size}`;
+  if (cropCache[cacheKey]) return cropCache[cacheKey];
+
+  const img = await getImg(def.src);
+  if (!img) return null;
+
+  const iw=img.naturalWidth, ih=img.naturalHeight;
+  const srcW=def.sw*iw, srcH=def.sh*ih;
+  const aspect=srcW/srcH;
+  let dw,dh,dx,dy;
+  if(aspect>=1){dw=size;dh=size/aspect;dx=0;dy=(size-dh)/2;}
+  else{dh=size;dw=size*aspect;dx=(size-dw)/2;dy=0;}
+
+  const c=document.createElement('canvas');
+  c.width=c.height=size;
+  const ctx=c.getContext('2d');
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(img,def.sx*iw,def.sy*ih,srcW,srcH,dx,dy,dw,dh);
+
+  // Background removal
+  const id=ctx.getImageData(0,0,size,size);
+  const d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    // Mockup card background color or white transparent
+    if((d[i]>210 && d[i+1]>210 && d[i+2]>210) || (d[i]===34 && d[i+1]===36 && d[i+2]===49) || (d[i]===27 && d[i+1]===33 && d[i+2]===56)) {
+      d[i+3]=0;
+    }
+  }
+  ctx.putImageData(id,0,0);
+  cropCache[cacheKey]=c;
+  return c;
+}
+
+function hexRgb(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function tint(src,pal){
+  const c=document.createElement('canvas');
+  c.width=src.width;c.height=src.height;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(src,0,0);
+  const id=ctx.getImageData(0,0,c.width,c.height);
+  const d=id.data;
+  const [pr,pg,pb]=hexRgb(pal.p);
+  const [sr,sg,sb]=hexRgb(pal.s);
+  const [hr,hg,hb]=hexRgb(pal.h);
+  const [dr,dg,db]=hexRgb(pal.d);
+  for(let i=0;i<d.length;i+=4){
+    if(d[i+3]<10) continue;
+    const g=(d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255;
+    let tr,tg,tb;
+    if(g<.15){tr=dr;tg=dg;tb=db;}
+    else if(g<.4){const t=(g-.15)/.25;tr=dr+(pr-dr)*t;tg=dg+(pg-dg)*t;tb=db+(pb-db)*t;}
+    else if(g<.7){const t=(g-.4)/.3;tr=pr+(sr-pr)*t;tg=pg+(sg-pg)*t;tb=pb+(sb-pb)*t;}
+    else{const t=(g-.7)/.3;tr=sr+(hr-sr)*t;tg=sg+(hg-sg)*t;tb=sb+(hb-sb)*t;}
+    d[i]=Math.round(tr);d[i+1]=Math.round(tg);d[i+2]=Math.round(tb);
+  }
+  ctx.putImageData(id,0,0);
+  return c;
+}
+
+function drawLayer(ctx, src, cx, cy, scale, CS) {
+  const box=scale*CS;
+  const tmp=src.getContext('2d');
+  const id=tmp.getImageData(0,0,src.width,src.height);
+  const dArr=id.data;
+  let minX=src.width,maxX=0,minY=src.height,maxY=0;
+  for(let y=0;y<src.height;y++) for(let x=0;x<src.width;x++){
+    if(dArr[(y*src.width+x)*4+3]>10){
+      if(x<minX)minX=x;if(x>maxX)maxX=x;
+      if(y<minY)minY=y;if(y>maxY)maxY=y;
+    }
+  }
+  if(maxX<=minX||maxY<=minY) return;
+  const bw=maxX-minX+1,bh=maxY-minY+1;
+  const asp=bw/bh;
+  let dw,dh;
+  if(asp>=1){dw=box;dh=box/asp;}else{dh=box;dw=box*asp;}
+  if(dw<2)dw=2;if(dh<2)dh=2;
+  const dx=cx*CS-dw/2, dy=cy*CS-dh/2;
+  ctx.drawImage(src,minX,minY,bw,bh,Math.round(dx),Math.round(dy),Math.round(dw),Math.round(dh));
+}
+
+// ══════════════════════════════════════════
+// RENDER MAIN CANVAS
+// ══════════════════════════════════════════
+const mainC=document.getElementById('main');
+const mainX=mainC.getContext('2d');
+mainX.imageSmoothingEnabled=false;
+const CS=mainC.width; // 96
+
+async function render() {
+  mainX.clearRect(0,0,CS,CS);
+  const pal=PAL[S.type];
+
+  if (S.mode === 'original') {
+    // Render Single Standalone Transparent PNG Creature
+    const preset = ORIGINAL_PRESETS.find(p => p.id === S.selectedOriginal) || ORIGINAL_PRESETS[0];
+    const img = await getImg(preset.pngKey);
+    if (img) {
+      // Direct contain-fit draw
+      const iw = img.naturalWidth, ih = img.naturalHeight;
+      const asp = iw / ih;
+      const box = CS * 0.85;
+      let dw, dh;
+      if (asp >= 1) { dw = box; dh = box / asp; }
+      else { dh = box; dw = box * asp; }
+      const dx = (CS - dw) / 2, dy = (CS - dh) / 2;
+      mainX.drawImage(img, 0, 0, iw, ih, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    }
+  } else {
+    // Render Layered Modular Parts
+    for(const layerKey of RENDER_ORDER){
+      const catEntry=Object.values(CATS).find(c=>c.layer===layerKey);
+      if(!catEntry) continue;
+      const catKey=Object.keys(CATS).find(k=>CATS[k].layer===layerKey);
+      const pid=S.sel[catKey];
+      if(!pid||pid==='none') continue;
+      const def=catEntry.parts.find(p=>p.id===pid);
+      if(!def||!def.src) continue;
+      const cr=await cropPart(def,128);
+      if(!cr) continue;
+      const pos=LAYER_POS[layerKey];
+      const layer=pos.tint?tint(cr,pal):cr;
+      drawLayer(mainX,layer,pos.cx,pos.cy,pos.scale,CS);
+    }
+  }
+  updateJson();
+}
+
+// ══════════════════════════════════════════
+// THUMBNAILS
+// ══════════════════════════════════════════
+async function getThumb(def){
+  if (def.pngKey) {
+    // Preset thumbnail directly from standalone PNG
+    const img = await getImg(def.pngKey);
+    if (!img) return null;
+    const c = document.createElement('canvas');
+    c.width = c.height = 40;
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const iw = img.naturalWidth, ih = img.naturalHeight;
+    const asp = iw / ih;
+    let dw, dh;
+    if (asp >= 1) { dw = 36; dh = 36 / asp; }
+    else { dh = 36; dw = 36 * asp; }
+    const dx = (40 - dw) / 2, dy = (40 - dh) / 2;
+    ctx.drawImage(img, 0, 0, iw, ih, Math.round(dx), Math.round(dy), Math.round(dw), Math.round(dh));
+    return c;
+  }
+  const k=`${def.src}|${def.id}`;
+  if(cropCache[k+'_thumb']) return cropCache[k+'_thumb'];
+  const c=await cropPart(def,40);
+  cropCache[k+'_thumb']=c; return c;
+}
+
+// ══════════════════════════════════════════
+// BUILD UI
+// ══════════════════════════════════════════
+function setMode(m) {
+  S.mode = m;
+  document.getElementById('btnModeOriginal').className = 'mode-btn' + (m === 'original' ? ' active' : '');
+  document.getElementById('btnModeParts').className = 'mode-btn' + (m === 'parts' ? ' active' : '');
+  
+  if (m === 'original') {
+    document.getElementById('leftPanelTitle').textContent = '완성형 생명체 (오리지널)';
+    buildOriginalPresetsGrid();
+  } else {
+    document.getElementById('leftPanelTitle').textContent = '파츠 카테고리';
+    buildCatTabs();
+    buildGrid(S.cat);
+  }
+  render();
+}
+
+function buildOriginalPresetsGrid() {
+  document.getElementById('catTabs').innerHTML = '';
+  const grid = document.getElementById('partGrid');
+  grid.innerHTML = '';
+  
+  ORIGINAL_PRESETS.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'part-item' + (S.selectedOriginal === item.id ? ' sel' : '');
+    el.title = item.l;
+    const lbl = document.createElement('span');
+    lbl.className = 'lbl'; lbl.textContent = item.l;
+    
+    getThumb(item).then(thumb => {
+      if(thumb) el.appendChild(thumb.cloneNode(true));
+      el.appendChild(lbl);
+    });
+    
+    el.addEventListener('click', () => {
+      S.selectedOriginal = item.id;
+      S.type = item.type;
+      S.name = item.name;
+      document.getElementById('pName').value = S.name;
+      buildOriginalPresetsGrid();
+      buildTypeGrid();
+      buildSwatches();
+      render();
+    });
+    grid.appendChild(el);
+  });
+}
+
+function buildGrid(catKey){
+  const grid=document.getElementById('partGrid');
+  grid.innerHTML='';
+  CATS[catKey].parts.forEach(part=>{
+    let el;
+    if(part.id==='none'){
+      el=document.createElement('div');
+      el.className='part-none'+(S.sel[catKey]==='none'?' sel':'');
+      el.textContent='✕'; el.title='없음';
+    } else {
+      el=document.createElement('div');
+      el.className='part-item'+(S.sel[catKey]===part.id?' sel':'');
+      el.title=part.l;
+      const lbl=document.createElement('span');
+      lbl.className='lbl'; lbl.textContent=part.l;
+      getThumb(part).then(thumb=>{
+        if(thumb) el.appendChild(thumb.cloneNode(true));
+        el.appendChild(lbl);
+      });
+    }
+    el.addEventListener('click',()=>{S.sel[catKey]=part.id;buildGrid(catKey);render();});
+    grid.appendChild(el);
+  });
+}
+
+function buildCatTabs(){
+  const tabs=document.getElementById('catTabs');
+  tabs.innerHTML='';
+  Object.keys(CATS).forEach(key=>{
+    const btn=document.createElement('button');
+    btn.className='cat-tab'+(S.cat===key?' active':'');
+    btn.textContent=CATS[key].label;
+    btn.addEventListener('click',()=>{
+      S.cat=key;
+      document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+      btn.classList.add('active');
+      buildGrid(key);
+    });
+    tabs.appendChild(btn);
+  });
+}
+
+function buildTypeGrid(){
+  const grid=document.getElementById('typeGrid'); grid.innerHTML='';
+  Object.entries(PAL).forEach(([key,p])=>{
+    const btn=document.createElement('button');
+    btn.className='type-btn'+(S.type===key?' active':'');
+    btn.style.backgroundColor=S.type===key?p.p:'';
+    btn.innerHTML=`${p.e}<br>${p.l}`;
+    btn.addEventListener('click',()=>{S.type=key;buildTypeGrid();buildSwatches();render();});
+    grid.appendChild(btn);
+  });
+}
+
+function buildSwatches(){
+  const c=document.getElementById('swatches'); c.innerHTML='';
+  const p=PAL[S.type];
+  ['d','p','s','h'].forEach(role=>{
+    const sw=document.createElement('div');
+    sw.className='swatch'; sw.style.backgroundColor=p[role]; sw.title=role;
+    c.appendChild(sw);
+  });
+}
+
+function buildStats(){
+  const c=document.getElementById('statsBox');
+  STATS_DEF.forEach(sd=>{
+    const wrap=document.createElement('div'); wrap.className='stat-row';
+    wrap.innerHTML=`<div class="stat-hd"><span class="stat-nm">${sd.l}</span><span class="stat-vl" id="v_${sd.k}">${S.stats[sd.k]}</span></div><input type="range" class="stat-sl" id="sl_${sd.k}" min="${sd.mn}" max="${sd.mx}" value="${S.stats[sd.k]}">`;
+    c.appendChild(wrap);
+    wrap.querySelector(`#sl_${sd.k}`).addEventListener('input',function(){
+      S.stats[sd.k]=+this.value; document.getElementById(`v_${sd.k}`).textContent=this.value; updateJson();
+    });
+  });
+}
+
+function updateJson(){
+  const obj={
+    name: S.name || '(미입력)',
+    mode: S.mode,
+    preset: S.mode==='original' ? S.selectedOriginal : null,
+    type: S.type,
+    stats: S.stats,
+    parts: S.mode==='parts' ? S.sel : null
+  };
+  document.getElementById('jsonBox').innerHTML=JSON.stringify(obj,null,2)
+    .replace(/"([^"]+)":/g,'<span class="jk">"$1"</span>:')
+    .replace(/: "([^"]+)"/g,': <span class="js">"$1"</span>')
+    .replace(/: (\d+)/g,': <span class="jn">$1</span>');
+}
+
+// ══════════════════════════════════════════
+// ACTIONS
+// ══════════════════════════════════════════
+document.getElementById('pName').addEventListener('input',function(){S.name=this.value;updateJson();});
+
+document.getElementById('btnRand').addEventListener('click',()=>{
+  if (S.mode === 'original') {
+    const r = ORIGINAL_PRESETS[Math.floor(Math.random()*ORIGINAL_PRESETS.length)];
+    S.selectedOriginal = r.id;
+    S.type = r.type;
+    S.name = r.name;
+    document.getElementById('pName').value = S.name;
+    buildOriginalPresetsGrid();
+  } else {
+    Object.keys(CATS).forEach(cat=>{
+      const list=CATS[cat].parts;
+      S.sel[cat]=list[Math.floor(Math.random()*list.length)].id;
+    });
+    S.type=Object.keys(PAL)[Math.floor(Math.random()*Object.keys(PAL).length)];
+    buildGrid(S.cat);
+  }
+  buildTypeGrid();buildSwatches();render();
+  toast('🎲 랜덤 생성 완료!');
+});
+
+document.getElementById('btnPng').addEventListener('click',()=>{
+  const out=document.createElement('canvas');out.width=384;out.height=384;
+  const ox=out.getContext('2d');ox.imageSmoothingEnabled=false;
+  ox.drawImage(mainC,0,0,384,384);
+  const a=document.createElement('a');a.href=out.toDataURL('image/png');
+  a.download=(S.name||'creature')+'.png';a.click();toast('⬇ PNG 저장됨');
+});
+
+document.getElementById('btnJson').addEventListener('click',()=>{
+  const out=document.createElement('canvas');out.width=384;out.height=384;
+  const ox=out.getContext('2d');ox.imageSmoothingEnabled=false;
+  ox.drawImage(mainC,0,0,384,384);
+  const data={
+    id:`creature_${Date.now()}`,
+    name:S.name||'(미입력)',
+    mode:S.mode,
+    preset:S.mode==='original'?S.selectedOriginal:null,
+    type:S.type,
+    stats:{...S.stats},
+    parts:S.mode==='parts'?{...S.sel}:null,
+    sprite:out.toDataURL('image/png')
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=(S.name||'creature')+'.json';a.click();toast('📄 JSON 내보내기!');
+});
+
+let tt;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),2200);}
+
+(async()=>{
+  document.getElementById('pName').value = S.name;
+  buildTypeGrid();
+  buildSwatches();
+  buildStats();
+  setMode('original');
+})();
+</script>
+</body>
+</html>
